@@ -39,58 +39,68 @@ Item {
   implicitWidth: pill.width
   implicitHeight: pill.height
 
-  NPopupContextMenu {
-    id: contextMenu
-
-    model: [
-      {
-        "label": I18n.tr("actions.widget-settings"),
-        "action": "widget-settings",
-        "icon": "settings"
-      },
-    ]
-
-    onTriggered: action => {
-                   contextMenu.close();
-                   PanelService.closeContextMenu(screen);
-
-                   if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
-  }
+  readonly property string instanceId: "manual"
 
   BarPill {
     id: pill
 
     screen: root.screen
-    text: IdleInhibitorService.timeout == null ? "" : Time.formatVagueHumanReadableDuration(IdleInhibitorService.timeout)
+    text: {
+      var timeout = IdleInhibitorService.timeouts[root.instanceId];
+      return timeout == null ? "" : Time.formatVagueHumanReadableDuration(timeout);
+    }
     oppositeDirection: BarService.getPillDirection(root)
     customIconColor: Color.resolveColorKeyOptional(root.iconColorKey)
     customTextColor: Color.resolveColorKeyOptional(root.textColorKey)
-    icon: IdleInhibitorService.isInhibited ? "keep-awake-on" : "keep-awake-off"
-    tooltipText: IdleInhibitorService.isInhibited ? I18n.tr("tooltips.keep-awake") : I18n.tr("tooltips.keep-awake")
-    onClicked: IdleInhibitorService.manualToggle()
+    icon: IdleInhibitorService.activeInhibitors.includes(root.instanceId) ? "keep-awake-on" : "keep-awake-off"
+    tooltipText: IdleInhibitorService.getFormattedTooltip(root.instanceId)
+    onClicked: IdleInhibitorService.manualToggle(root.instanceId)
     onRightClicked: {
       PanelService.showContextMenu(contextMenu, pill, screen);
     }
-    forceOpen: IdleInhibitorService.timeout !== null
-    forceClose: IdleInhibitorService.timeout == null
+    forceOpen: IdleInhibitorService.timeouts[root.instanceId] !== undefined
+    forceClose: IdleInhibitorService.timeouts[root.instanceId] === undefined
     onWheel: function (delta) {
       var sign = delta > 0 ? 1 : -1;
-      // the offset makes scrolling down feel symmetrical to scrolling up
-      var timeout = IdleInhibitorService.timeout - (delta < 0 ? 60 : 0);
-      if (timeout == null || timeout < 600) {
-        delta = 60; // <= 10m, increment at 1m interval
-      } else if (timeout >= 600 && timeout < 1800) {
-        delta = 300; // >= 10m, increment at 5m interval
-      } else if (timeout >= 1800 && timeout < 3600) {
-        delta = 600; // >= 30m, increment at 10m interval
-      } else if (timeout >= 3600) {
-        delta = 1800; // > 1h, increment at 30m interval
+      var currentTimeout = IdleInhibitorService.timeouts[root.instanceId];
+      var baseDelta = 60;
+
+      if (currentTimeout === undefined || currentTimeout < 600) {
+        baseDelta = 60; // <= 10m, increment at 1m interval
+      } else if (currentTimeout >= 600 && currentTimeout < 1800) {
+        baseDelta = 300; // >= 10m, increment at 5m interval
+      } else if (currentTimeout >= 1800 && currentTimeout < 3600) {
+        baseDelta = 600; // >= 30m, increment at 10m interval
+      } else if (currentTimeout >= 3600) {
+        baseDelta = 1800; // > 1h, increment at 30m interval
       }
 
-      IdleInhibitorService.changeTimeout(delta * sign);
+      IdleInhibitorService.changeTimeout(root.instanceId, baseDelta * sign);
     }
+  }
+
+  NPopupContextMenu {
+    id: contextMenu
+
+    model: {
+      var m = IdleInhibitorService.getMenuModel(root.instanceId, root.screen);
+      m.push({
+               "label": I18n.tr("actions.widget-settings"),
+               "action": "widget-settings",
+               "icon": "settings"
+             });
+      return m;
+    }
+
+    onTriggered: action => {
+                   contextMenu.close();
+                   PanelService.closeContextMenu(screen);
+                   IdleInhibitorService.handleMenuAction(action, root.instanceId, root.screen, {
+                                                           "section": section,
+                                                           "sectionWidgetIndex": sectionWidgetIndex,
+                                                           "widgetId": widgetId,
+                                                           "widgetSettings": widgetSettings
+                                                         });
+                 }
   }
 }

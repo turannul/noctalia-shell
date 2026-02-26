@@ -211,6 +211,11 @@ ColumnLayout {
       tabIndex: 1
       checked: subTabBar.currentIndex === 1
     }
+    NTabButton {
+      text: I18n.tr("tooltips.keep-awake")
+      tabIndex: 2
+      checked: subTabBar.currentIndex === 2
+    }
   }
 
   Item {
@@ -229,5 +234,6 @@ ColumnLayout {
       reorderEntries: root.reorderEntries
       openEntrySettingsDialog: root.openEntrySettingsDialog
     }
+    InhibitorSubTab {}
   }
 }

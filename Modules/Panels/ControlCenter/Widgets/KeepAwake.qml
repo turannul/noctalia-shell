@@ -1,14 +1,33 @@
+import QtQuick
 import QtQuick.Layouts
-import Quickshell
 import qs.Commons
 import qs.Services.Power
+import qs.Services.UI
 import qs.Widgets
 
 NIconButtonHot {
-  property ShellScreen screen
+  id: root
 
-  icon: IdleInhibitorService.isInhibited ? "keep-awake-on" : "keep-awake-off"
-  hot: IdleInhibitorService.isInhibited
-  tooltipText: I18n.tr("tooltips.keep-awake")
-  onClicked: IdleInhibitorService.manualToggle()
+  property string instanceId: "manual"
+
+  icon: IdleInhibitorService.activeInhibitors.includes(instanceId) ? "keep-awake-on" : "keep-awake-off"
+
+  hot: IdleInhibitorService.activeInhibitors.includes(instanceId)
+  tooltipText: IdleInhibitorService.getFormattedTooltip(instanceId)
+  onClicked: IdleInhibitorService.manualToggle(instanceId)
+  onRightClicked: {
+    PanelService.showContextMenu(contextMenu, root, screen);
+  }
+
+  NPopupContextMenu {
+    id: contextMenu
+
+    model: IdleInhibitorService.getMenuModel(instanceId, root.screen)
+
+    onTriggered: action => {
+                   contextMenu.close();
+                   PanelService.closeContextMenu(screen);
+                   IdleInhibitorService.handleMenuAction(action, instanceId, root.screen);
+                 }
+  }
 }

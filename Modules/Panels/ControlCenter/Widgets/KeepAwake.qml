@@ -8,6 +8,7 @@ import qs.Widgets
 NIconButtonHot {
   id: root
 
+  property var screen: null
   property string instanceId: "manual"
 
   icon: IdleInhibitorService.activeInhibitors.includes(instanceId) ? "keep-awake-on" : "keep-awake-off"

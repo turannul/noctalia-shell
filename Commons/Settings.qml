@@ -608,7 +608,7 @@ Singleton {
           "keybind": "7"
         }
       ]
-      property list<int> keepAwakeIntervals: [300, 900, 1800, 3600, 7200, 14400]
+      property list<var> keepAwakeIntervals: [300, 900, 1800, 3600, 7200, 14400]
     }
 
     // notifications

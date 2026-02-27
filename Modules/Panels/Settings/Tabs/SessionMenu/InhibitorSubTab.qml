@@ -47,8 +47,6 @@ ColumnLayout {
     placeholderText: "5, 15, 30, 60, 120, 240"
 
     text: {
-      if (!Settings.isLoaded || !Settings.data.sessionMenu)
-        return "";
       var intervals = Settings.data.sessionMenu.keepAwakeIntervals;
       var mins = [];
       if (intervals) {
@@ -60,8 +58,13 @@ ColumnLayout {
     }
 
     onAccepted: {
-      if (!Settings.data.sessionMenu)
-        return;
+      if (text.trim() === "") {
+        var defaults = Settings.getDefaultValue("sessionMenu.keepAwakeIntervals");
+        if (defaults && defaults.length > 0) {
+          Settings.data.sessionMenu.keepAwakeIntervals = defaults;
+        }
+        return;  // Accept empty textbox return defaults.
+      }
 
       var parts = text.split(/[\s,]+/);
       var newIntervals = [];
